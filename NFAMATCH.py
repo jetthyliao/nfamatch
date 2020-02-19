@@ -12,57 +12,50 @@
 import sys
 import copy
 
-# Find states connected by lambduh
-def follow_lambda(state_set, table, lambduh):
+#########################################################################################
+# NFA TO DFA
+#   - Follow Lambda
+#   - Follow Char
+#########################################################################################
 
-    states = []
+# Follow Lambda: Helper method for NFA to DFA
+#   Returns set of states from following the lambdas
+def follow_lambda(start_set, table, lambduh):
 
-    # loop through the set of states given
-    for initial in state_set:
-        # add it to the return set if not already in there
-        if initial not in states:
-            states.append(initial)
-        
-        child = table[initial] # list of nodes current node can transition to
-        stack = []             # stack for while loop
+    return_states = copy.deepcopy(start_set)
 
-        # this could be better optimized
-        # will do later (maybe)
-        for s in child:
-            if s[1] == lambduh:
-                for c in table[int(s[0])]:
-                    stack.append(c)
-                if int(s[0]) not in states:
-                    states.append(int(s[0]))
+    L = [] # Let L be the empty stack 
 
-        while stack:
-            t = stack.pop()
-            if t[1] == lambduh:
-                if int(t[0]) not in states:
-                    states.append(int(t[0]))
-                for e in table[int(t[0])]:
-                    if int(e[0]) not in states and e[1] == lambduh:
-                        stack.append(e)
-                        states.append(int(e[0]))
+    for t in start_set:
+        L.append(t)
 
-    return states
+    # loop and check all states in L and follow the lambdas
+    while L:
+        t = L.pop()
+        for l in table[t]:
+            if l[1] == lambduh and l[0] not in return_states:
+                return_states.append(l[0]) # add state if it follows in lambda
+                L.append(l[0])
 
-# Find states transition on a specific symbol
-def follow_char(state_set, table, symbol): 
+    return return_states
+
+# Follow Char: Helper method for NFA to DFA
+#   Return set of states that transition on a given symbol
+def follow_char(start_set, table, symbol): 
 
     states = [] # list of states that transition on the symbol
 
     # loop and check all transitions
-    for initial in state_set:
+    for initial in start_set:
         for s in table[initial]:
-            # add state if it matches the transition symbol
             if s[1] == symbol:
-                states.append(int(s[0]))
+                states.append(int(s[0])) # add state if it matches the transition symbol
     
     return states
 
 # Convert NFA to DFA
 def nfa_to_dfa(table,accept,lambduh,alphabet): 
+
     # Step 1:
     #   L = empty stack
     #   A = set of accepting states for N
@@ -81,9 +74,10 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
     L.append(B)
     
     # Step 2:
-    # Loop through and generate sets for each alphabet symbol
-    # Add all unique sets back into the stack
-    # Continue until stack is empty
+    #   Loop through and generate sets for each alphabet symbol
+    #   Add all unique sets back into the stack
+    #   Continue until stack is empty
+
     while L:
         S = list(L.pop())
         
@@ -91,7 +85,8 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
         for a in alphabet:
             # R is the set of states that transition on a symbol
             R = follow_lambda(follow_char(S, table, a), table, lambduh)
-            R.sort() # sort R because R is a tuple and without sort the same state might get added into the stack
+            R.sort() # sort R because R is a tuple and without sort the same 
+                     # state might get added into the stack
 
             if R != []:
                 # check whether the state exists in the DFA table
@@ -117,15 +112,159 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
         # if S has no outgoing transitions, but is accepting, needs tobe in table
         if set(S).intersection(set(accept)) and tuple(S) not in dfa_table:
             dfa_table[tuple(S)] = []
-    
+
     return dfa_table, dfa_accept
 
+#########################################################################################
+# DFA Optimization
+#   - Simplify States
+#   - Create Table
+#########################################################################################
+
+# Simplify States
+#   My implementatiion of the DFA is a dictionary with states represented as tuples
+#   This function is used to simplify the tuples into readable ints
+def simplify_states(dfa_table, dfa_accept):
+
+    simple_table = {}
+    simple_accept = []
+    index_table = {}
+
+    count = 0
+    for d in dfa_table:
+        index_table[d] = count
+        count = count + 1
+
+    for d in dfa_table:
+        if dfa_table[d] == []:
+            simple_table[index_table[d]] = []
+        for l in dfa_table[d]:
+            if index_table[d] in simple_table:
+                value = simple_table[index_table[d]]
+                value.append((index_table[l[0]], l[1]))
+                simple_table[index_table[d]] = value
+            else:
+                simple_table[index_table[d]] = [(index_table[l[0]], l[1])]
+        
+    for a in dfa_accept:
+        simple_accept.append(index_table[a])
+
+    return simple_table, simple_accept
+
+def create_transition_table(dfa_table, dfa_accept, alphabet):
+
+    transition_table = [['E' for x in range(len(alphabet)+2)] for y in range(len(dfa_table))] 
+
+    count = 0
+    for d in dfa_table:
+        transition_table[count][1] = d
+        if d in dfa_accept: 
+            transition_table[count][0] = '+'
+        else:
+            transition_table[count][0] = '-'
+        count = count + 1
+
+    alphabet = list(alphabet)
+
+    for row in transition_table:
+        for d in dfa_table[row[1]]:
+            row[alphabet.index(d[1])+2] = d[0]
+
+    return transition_table
+
+def print_pretty(matrix):
+    s = [[str(e) for e in row] for row in matrix]
+    lens = [max(map(len, col)) for col in zip(*s)]
+    fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
+    table = [fmt.format(*row) for row in s]
+    print('\n'.join(table))
+
+
 # Optimize DFA (Hot cross buns algorithm) (Hopcrofts)
-def dfa_opt():
-    return 0
+def dfa_opt(dfa_table, dfa_accept, alphabet):
+
+    # Step 0:
+    #   Simplify dfa_table and dfa_accept
+
+    dfa_table, dfa_accept = simplify_states(dfa_table, dfa_accept)
+
+    # Step 1: 
+    #   M = empty set 
+    #   L = empty set
+    #   Populate accepting states and alphabet into L
+    #   Populate non-accepting states and alphabet into L
+    M = []
+    L = []
+
+    acc = set(dfa_accept)  # populate accepting state
+    dfa = set(dfa_table)    
+    for c in acc:
+        dfa.remove(c)      # populate all states, remove accepting, leaving non-accepting
+
+    L.append((acc, alphabet))
+    L.append((dfa, alphabet))
+
+    # Step 2:
+    #   While L is not empty
+    #   S, C = pop L (Set, Alphabet)
+    #   remove one symbol from alphabet
+    #   segregate state s by T[S][C]a
+    while L: 
+        current_set = L.pop()
+        S = current_set[0]    # set of states
+        C = list(current_set[1])    # alphabet list
+
+        c = C.pop(0)
+        segregate = set()
+
+        diff_sets = {}
+        
+        for s in S:
+            count = 0
+            for c_tuples in dfa_table[s]:
+                if c == c_tuples[1]:
+                    count = 1
+                    if c_tuples[0] in diff_sets:
+                        value = diff_sets[c_tuples[0]]
+                        value.append(s)
+                        diff_sets[c_tuples[0]] = value
+                    else: 
+                        diff_sets[c_tuples[0]] = [s]
+        if not C:
+            M.append(S)
+        else:
+            for diff in diff_sets:
+                if len(diff_sets[diff]) != 1:
+                    L.append((set(diff_sets[diff]),C))
+
+    transition_table = create_transition_table(dfa_table, dfa_accept, alphabet)
+
+    # Step 3:
+    #   Merge States
+    for m in M: 
+        m = list(m)
+        combine = m[0]
+        merge = m[1:]
+        for a in range(len(transition_table)):
+            for b in range(len(transition_table[0])):
+                if transition_table[a][b] in merge:
+                    transition_table[a][b] = combine
+
+    unique_table = set()
+
+    for t in range(len(transition_table)):
+        unique_table.add(tuple(transition_table[t]))
+
+    return unique_table
+
+#########################################################################################
+# MAIN/PREPROCESS
+#   - create_nfa_table
+#   - main function
+#########################################################################################
 
 # Handles forming the NFA table, accepting state list, lambda, and alphabet
-def initialize_table(filename):
+def create_nfa_table(filename):
     # Check if file is empty
     # Doesnt exist
     with open(filename) as file_input: 
@@ -155,7 +294,6 @@ def initialize_table(filename):
         # go through and add states to the proper table entry
         for line in file_input:
             line = line.split()
-            print(line)
 
             # if state is accepting, add it to the list
             if line[0] == "+":
@@ -163,9 +301,9 @@ def initialize_table(filename):
             
             if len(line) == 3:
                 # this is a check for a node transitioning to nothing
-                node = (line[2],None)
+                node = (int(line[2]),None)
             else:
-                node = (line[2],line[3]) 
+                node = (int(line[2]),line[3]) 
             
             value = table[int(line[1])]
             value.append(node)
@@ -188,21 +326,11 @@ def main(argv):
         output_file = argv[2]
         tokens = argv[3:]
 
-    table,accept,lambduh,alphabet = initialize_table(inpoot_file)
+    table,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
 
-    for a in table:
-        print(a, table[a])
-
-    print("-------------------------------------------------------")
-
-    #print(follow_lambda([6], table, lambduh))
-    #print(follow_char([2,3,5,7,10], table, 'P'))
     dfa_table, dfa_accept = nfa_to_dfa(table,accept,lambduh,alphabet)
-
-    for d in dfa_table:
-        print(d, dfa_table[d])
-
-    print(dfa_accept)
+    
+    dfa_opt(dfa_table, dfa_accept, alphabet)
 
     sys.exit(0)
 
