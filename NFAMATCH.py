@@ -255,6 +255,9 @@ def dfa_opt(dfa_table, dfa_accept, alphabet):
     for t in range(len(transition_table)):
         unique_table.add(tuple(transition_table[t]))
 
+    for u in unique_table:
+        print(u)
+
     return unique_table
 
 #########################################################################################
@@ -327,6 +330,10 @@ def main(argv):
         tokens = argv[3:]
 
     table,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
+
+    for t in table:
+        print(t, table[t])
+    print("--------------------------------")
 
     dfa_table, dfa_accept = nfa_to_dfa(table,accept,lambduh,alphabet)
     
