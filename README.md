@@ -12,6 +12,6 @@ Jessy Liao
     - [x] simplify states
     - [x] create transition table
     - [x] dfa-opt functionality
-- [ ] Fix preprocessing NFA file
-- [ ] Write DFA to data file
-- [ ] Match token functionality
+- [x] Fix preprocessing NFA file
+- [x] Write DFA to data file
+- [x] Match token functionality

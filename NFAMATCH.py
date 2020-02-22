@@ -3,10 +3,6 @@
 # CSCI498: NFAMATCH
 # CODE BY JESSY LIAO
 #
-# TODO:
-#   - CHECK FOR A NODE POINTING TO NOWHERE BUT ALSO ISNT ACCEPTING
-#   - DFA OPTIMIZE (HOT CROSS BUNS ALGORITHM) (HOPCROFTS)
-#
 ##########################################################################################
 
 import sys
@@ -54,7 +50,7 @@ def follow_char(start_set, table, symbol):
     return states
 
 # Convert NFA to DFA
-def nfa_to_dfa(table,accept,lambduh,alphabet): 
+def nfa_to_dfa(table,accept,lambduh,alphabet,start): 
 
     # Step 1:
     #   L = empty stack
@@ -63,9 +59,11 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
 
     L = []
     A = accept
-    i = [0]
-
+    i = [start]
+    
     B = tuple(follow_lambda(i,table,lambduh))
+
+    start = B
 
     dfa_accept = []
     dfa_table = {}
@@ -102,7 +100,7 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
                 dfa_table[tuple(S)] = value
 
                 # if R is a new state and its not empty, add to the stack
-                if tuple(R) not in dfa_table and R != []:
+                if tuple(R) not in dfa_table and R != [] and R not in L:
                     L.append(R)
 
             # checks if R is an accept state
@@ -113,7 +111,7 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
         if set(S).intersection(set(accept)) and tuple(S) not in dfa_table:
             dfa_table[tuple(S)] = []
 
-    return dfa_table, dfa_accept
+    return dfa_table, dfa_accept, start
 
 #########################################################################################
 # DFA Optimization
@@ -124,16 +122,19 @@ def nfa_to_dfa(table,accept,lambduh,alphabet):
 # Simplify States
 #   My implementatiion of the DFA is a dictionary with states represented as tuples
 #   This function is used to simplify the tuples into readable ints
-def simplify_states(dfa_table, dfa_accept):
+def simplify_states(dfa_table, dfa_accept, start):
 
     simple_table = {}
     simple_accept = []
     index_table = {}
 
-    count = 0
+    count = 1
     for d in dfa_table:
-        index_table[d] = count
-        count = count + 1
+        if d == start:
+            index_table[d] = 0
+        else:
+            index_table[d] = count
+            count = count + 1
 
     for d in dfa_table:
         if dfa_table[d] == []:
@@ -181,12 +182,12 @@ def print_pretty(matrix):
 
 
 # Optimize DFA (Hot cross buns algorithm) (Hopcrofts)
-def dfa_opt(dfa_table, dfa_accept, alphabet):
+def dfa_opt(dfa_table, dfa_accept, alphabet, start):
 
     # Step 0:
     #   Simplify dfa_table and dfa_accept
 
-    dfa_table, dfa_accept = simplify_states(dfa_table, dfa_accept)
+    dfa_table, dfa_accept = simplify_states(dfa_table, dfa_accept, start)
 
     # Step 1: 
     #   M = empty set 
@@ -243,6 +244,7 @@ def dfa_opt(dfa_table, dfa_accept, alphabet):
     #   Merge States
     for m in M: 
         m = list(m)
+        m.sort() # 0 is set so that its always the starting state, when merging, we will always merge into 0 making it stay the starting state
         combine = m[0]
         merge = m[1:]
         for a in range(len(transition_table)):
@@ -255,15 +257,54 @@ def dfa_opt(dfa_table, dfa_accept, alphabet):
     for t in range(len(transition_table)):
         unique_table.add(tuple(transition_table[t]))
 
-    for u in unique_table:
-        print(u)
-
     return unique_table
 
 #########################################################################################
-# MAIN/PREPROCESS
+# TOKEN MATCHING
+#   - token_match
+#########################################################################################
+
+def token_match(tokens,table, alphabet):
+    accept = []
+    dict_table = {}
+
+    for t in table:
+        next_states = []
+        if t[0] == '+':
+            accept.append(t[1])
+        for i in range(2,len(alphabet)+2):
+            next_states.append(t[i])
+        dict_table[t[1]] = next_states
+
+    print("...")
+    for token in tokens:
+        transitions = dict_table[0]
+        current_state = 0
+        count = 1
+        match = True
+        if token == '':
+            print("OUTPUT 0")
+        else:
+            for t in token:
+                if transitions[alphabet[t]] != 'E':
+                    current_state = transitions[alphabet[t]]
+                    transitions = dict_table[transitions[alphabet[t]]]
+                else:
+                    match = False
+                    break
+                count = count + 1
+            if match and current_state in accept:
+                print("OUTPUT :M:")
+            else:
+                print("OUTPUT", count)
+        print("...")
+
+    return 0
+
+#########################################################################################
+# FILE PROCESSING
 #   - create_nfa_table
-#   - main function
+#   - output to dat file
 #########################################################################################
 
 # Handles forming the NFA table, accepting state list, lambda, and alphabet
@@ -278,6 +319,7 @@ def create_nfa_table(filename):
             sys.exit(1)
         
         # initialize number of states, lambda, and alphabet
+        starting_state = -1
         num_states = first_line[0]
         lambduh = first_line[1]
         alphabet_list = first_line[2:]
@@ -312,8 +354,27 @@ def create_nfa_table(filename):
             value.append(node)
             
             table[int(line[1])] = value
+            
+            if starting_state == -1 and int(line[1]) == 0:
+                starting_state = int(line[1])
 
-    return table, accept, lambduh, alphabet
+        file_input.close()
+
+    return table, starting_state, accept, lambduh, alphabet
+
+def output_dfa(filename, optimized_dfa):
+    output = open(filename,'w') 
+    for o in optimized_dfa:
+        line = ""
+        for chars in o:
+            line = line + str(chars) + " "
+        line = line[:-1] + '\n'
+        output.write(line)
+    output.close()
+
+#########################################################################################
+# MAIN FUNCTION
+#########################################################################################
 
 def main(argv): 
 
@@ -329,19 +390,18 @@ def main(argv):
         output_file = argv[2]
         tokens = argv[3:]
 
-    table,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
+    table,start,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
 
-    for t in table:
-        print(t, table[t])
-    print("--------------------------------")
+    dfa_table, dfa_accept, start = nfa_to_dfa(table,accept,lambduh,alphabet,start)
 
-    dfa_table, dfa_accept = nfa_to_dfa(table,accept,lambduh,alphabet)
-    
-    dfa_opt(dfa_table, dfa_accept, alphabet)
+    optimized_table = dfa_opt(dfa_table, dfa_accept, alphabet, start)
+
+    output_dfa(output_file, optimized_table)
+
+    token_match(tokens, optimized_table,alphabet)
 
     sys.exit(0)
 
-    
 if __name__ == '__main__':
     main(sys.argv)
 
