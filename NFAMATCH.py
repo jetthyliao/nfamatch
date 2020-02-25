@@ -347,11 +347,14 @@ def create_nfa_table(filename):
             if len(line) == 3:
                 # this is a check for a node transitioning to nothing
                 node = (int(line[2]),None)
+                value = table[int(line[1])]
+                value.append(node)
             else:
-                node = (int(line[2]),line[3]) 
-            
-            value = table[int(line[1])]
-            value.append(node)
+                all_transitions = line[3:]
+                for a in all_transitions:
+                    node = (int(line[2]),a) 
+                    value = table[int(line[1])]
+                    value.append(node)
             
             table[int(line[1])] = value
             
@@ -384,10 +387,12 @@ def main(argv):
     elif len(argv) == 3: 
         inpoot_file = argv[1]
         output_file = argv[2]
+        t = False
 
     else:
         inpoot_file = argv[1]
         output_file = argv[2]
+        t = True
         tokens = argv[3:]
 
     table,start,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
@@ -398,7 +403,8 @@ def main(argv):
 
     output_dfa(output_file, optimized_table)
 
-    token_match(tokens, optimized_table,alphabet)
+    if t:
+        token_match(tokens, optimized_table,alphabet)
 
     sys.exit(0)
 
