@@ -35,10 +35,11 @@ def follow_lambda(start_set, table, lambduh):
     # loop and check all states in L and follow the lambdas
     while L:
         t = L.pop()
-        for l in table[t]:
-            if l[1] == lambduh and l[0] not in return_states:
-                return_states.append(l[0]) # add state if it follows in lambda
-                L.append(l[0])
+        if t in table:
+            for l in table[t]:
+                if l[1] == lambduh and l[0] not in return_states:
+                    return_states.append(l[0]) # add state if it follows in lambda
+                    L.append(l[0])
 
     return return_states
 
@@ -50,9 +51,10 @@ def follow_char(start_set, table, symbol):
 
     # loop and check all transitions
     for initial in start_set:
-        for s in table[initial]:
-            if s[1] == symbol and s[0] not in states:
-                states.append(int(s[0])) # add state if it matches the transition symbol
+        if initial in table:
+            for s in table[initial]:
+                if s[1] == symbol and s[0] not in states:
+                    states.append(int(s[0])) # add state if it matches the transition symbol
     
     return states
 
