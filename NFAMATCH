@@ -397,62 +397,65 @@ def token_match(tokens,table, alphabet):
 def create_nfa_table(filename):
     # Check if file is empty
     # Doesnt exist
-    with open(filename) as file_input: 
-        first_line = next(file_input).split()
-        
-        # check if file is empty
-        if first_line == "":
-            sys.exit(1)
-        
-        # initialize number of states, lambda, and alphabet
-        starting_state = -1
-        num_states = first_line[0]
-        lambduh = first_line[1]
-        alphabet_list = first_line[2:]
-        
-        # alphabet is a dict (may or may not be useful when implementing optimize DFA)
-        alphabet = {}
-        for index,a in enumerate(alphabet_list):
-            alphabet[a] = index
-        
-        table = {}
-        accept = []
+    try:
+        with open(filename) as file_input: 
+            first_line = next(file_input)
+            
+            # check if file is empty
+            if first_line == "":
+                sys.exit(1)
+            
+            first_line = first_line.split()
+            # initialize number of states, lambda, and alphabet
+            starting_state = -1
+            num_states = first_line[0]
+            lambduh = first_line[1]
+            alphabet_list = first_line[2:]
+            
+            # alphabet is a dict (may or may not be useful when implementing optimize DFA)
+            alphabet = {}
+            for index,a in enumerate(alphabet_list):
+                alphabet[a] = index
+            
+            table = {}
+            accept = []
 
-        # go through and add states to the proper table entry
-        for line in file_input:
-            temp = line.strip()
-            if len(temp) != 0:
-                line = line.split()
+            # go through and add states to the proper table entry
+            for line in file_input:
+                temp = line.strip()
+                if len(temp) != 0:
+                    line = line.split()
 
-                # if state is accepting, add it to the list
-                if line[0] == "+":
-                    accept.append(int(line[1]))
-                
-                if len(line) == 3:
-                    # this is a check for a node transitioning to nothing
-                    if int(line[1]) in table: 
-                        node = (int(line[2]),None)
-                        value = table[int(line[1])]
-                        value.append(node)
-                    else: 
-                        value = [(int(line[2]),None)]
-                    table[int(line[1])] = value
-                else:
-                    all_transitions = line[3:]
-                    for a in all_transitions:
-                        if int(line[1]) in table:
-                            node = (int(line[2]),a) 
+                    # if state is accepting, add it to the list
+                    if line[0] == "+":
+                        accept.append(int(line[1]))
+                    
+                    if len(line) == 3:
+                        # this is a check for a node transitioning to nothing
+                        if int(line[1]) in table: 
+                            node = (int(line[2]),None)
                             value = table[int(line[1])]
                             value.append(node)
-                        else:
-                            value = [(int(line[2]),a)]
+                        else: 
+                            value = [(int(line[2]),None)]
                         table[int(line[1])] = value
-                
-                if starting_state == -1 and int(line[1]) == 0:
-                    starting_state = int(line[1])
+                    else:
+                        all_transitions = line[3:]
+                        for a in all_transitions:
+                            if int(line[1]) in table:
+                                node = (int(line[2]),a) 
+                                value = table[int(line[1])]
+                                value.append(node)
+                            else:
+                                value = [(int(line[2]),a)]
+                            table[int(line[1])] = value
+                    
+                    if starting_state == -1 and int(line[1]) == 0:
+                        starting_state = int(line[1])
+            except:
+                sys.exit(1)
 
-
-        file_input.close()
+            file_input.close()
 
     return table, starting_state, accept, lambduh, alphabet
 
