@@ -407,10 +407,6 @@ def create_nfa_table(filename):
         table = {}
         accept = []
 
-        # initialize NFA table to empty lists (representation of NFA diagram)
-        for table_size in range(int(num_states)):
-            table[table_size] = []
-
         # go through and add states to the proper table entry
         for line in file_input:
             line = line.split()
@@ -427,14 +423,18 @@ def create_nfa_table(filename):
             else:
                 all_transitions = line[3:]
                 for a in all_transitions:
-                    node = (int(line[2]),a) 
-                    value = table[int(line[1])]
-                    value.append(node)
+                    if int(line[1]) in table:
+                        node = (int(line[2]),a) 
+                        value = table[int(line[1])]
+                        value.append(node)
+                    else:
+                        value = [(int(line[2]),a)]
             
             table[int(line[1])] = value
             
             if starting_state == -1 and int(line[1]) == 0:
                 starting_state = int(line[1])
+
 
         file_input.close()
 
