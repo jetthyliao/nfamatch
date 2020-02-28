@@ -51,7 +51,7 @@ def follow_char(start_set, table, symbol):
     # loop and check all transitions
     for initial in start_set:
         for s in table[initial]:
-            if s[1] == symbol:
+            if s[1] == symbol and s[0] not in states:
                 states.append(int(s[0])) # add state if it matches the transition symbol
     
     return states
