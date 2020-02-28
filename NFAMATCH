@@ -429,8 +429,7 @@ def create_nfa_table(filename):
                         value.append(node)
                     else:
                         value = [(int(line[2]),a)]
-            
-            table[int(line[1])] = value
+                    table[int(line[1])] = value
             
             if starting_state == -1 and int(line[1]) == 0:
                 starting_state = int(line[1])
