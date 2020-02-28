@@ -149,12 +149,13 @@ def simplify_states(dfa_table, dfa_accept, start):
         if dfa_table[d] == []:
             simple_table[index_table[d]] = []
         for l in dfa_table[d]:
-            if index_table[d] in simple_table:
-                value = simple_table[index_table[d]]
-                value.append((index_table[l[0]], l[1]))
-                simple_table[index_table[d]] = value
-            else:
-                simple_table[index_table[d]] = [(index_table[l[0]], l[1])]
+            if l[0] in dfa_table:
+                if index_table[d] in simple_table:
+                    value = simple_table[index_table[d]]
+                    value.append((index_table[l[0]], l[1]))
+                    simple_table[index_table[d]] = value
+                else:
+                    simple_table[index_table[d]] = [(index_table[l[0]], l[1])]
         
     for a in dfa_accept:
         simple_accept.append(index_table[a])
@@ -469,6 +470,9 @@ def main(argv):
         tokens = argv[3:]
 
     table,start,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
+
+    for duh in table:
+        print(duh,table[duh])
 
     dfa_table, dfa_accept, start = nfa_to_dfa(table,accept,lambduh,alphabet,start)
 
