@@ -1,0 +1,14 @@
+10 # a b c d e f g h j
+- 0 1 a g
+- 1 2 b c
+- 2 3 c e
+- 2 5 d g
++ 3 3
+- 5 4 e j
+- 5 6 f a
++ 7 5 #
++ 7 6 g 
++ 7 7 c d e
++ 3 8 h g f e
+- 8 9 j a b c
+- 9 4 a b
