@@ -134,9 +134,6 @@ def nfa_to_dfa(table,accept,lambduh,alphabet,start):
 #   This function is used to simplify the tuples into readable ints
 def simplify_states(dfa_table, dfa_accept, start):
 
-    print(dfa_accept)
-    print(start)
-
     simple_table = {}
     simple_accept = []
     index_table = {}
@@ -412,30 +409,36 @@ def create_nfa_table(filename):
 
         # go through and add states to the proper table entry
         for line in file_input:
-            line = line.split()
+            temp = line.strip()
+            if len(temp) != 0:
+                line = line.split()
 
-            # if state is accepting, add it to the list
-            if line[0] == "+":
-                accept.append(int(line[1]))
-            
-            if len(line) == 3:
-                # this is a check for a node transitioning to nothing
-                node = (int(line[2]),None)
-                value = table[int(line[1])]
-                value.append(node)
-            else:
-                all_transitions = line[3:]
-                for a in all_transitions:
-                    if int(line[1]) in table:
-                        node = (int(line[2]),a) 
+                # if state is accepting, add it to the list
+                if line[0] == "+":
+                    accept.append(int(line[1]))
+                
+                if len(line) == 3:
+                    # this is a check for a node transitioning to nothing
+                    if int(line[1]) in table: 
+                        node = (int(line[2]),None)
                         value = table[int(line[1])]
                         value.append(node)
-                    else:
-                        value = [(int(line[2]),a)]
+                    else: 
+                        value = [(int(line[2]),None)]
                     table[int(line[1])] = value
-            
-            if starting_state == -1 and int(line[1]) == 0:
-                starting_state = int(line[1])
+                else:
+                    all_transitions = line[3:]
+                    for a in all_transitions:
+                        if int(line[1]) in table:
+                            node = (int(line[2]),a) 
+                            value = table[int(line[1])]
+                            value.append(node)
+                        else:
+                            value = [(int(line[2]),a)]
+                        table[int(line[1])] = value
+                
+                if starting_state == -1 and int(line[1]) == 0:
+                    starting_state = int(line[1])
 
 
         file_input.close()
