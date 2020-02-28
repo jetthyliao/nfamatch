@@ -75,7 +75,12 @@ def nfa_to_dfa(table,accept,lambduh,alphabet,start):
 
     start = B
 
-    dfa_accept = []
+    if set(B).intersection(set(accept)):
+        dfa_accept = [start]
+    else: 
+        dfa_accept = []
+
+
     dfa_table = {}
     dfa_table[B] = []
 
@@ -477,7 +482,7 @@ def main(argv):
         tokens = argv[3:]
 
     table,start,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
-
+    
     dfa_table, dfa_accept, start = nfa_to_dfa(table,accept,lambduh,alphabet,start)
 
     optimized_table = dfa_opt(dfa_table, dfa_accept, alphabet, start)
