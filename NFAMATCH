@@ -289,30 +289,49 @@ def dead_state_remover(transition_table):
                 reverse_mode[r] = value
 
     visited = {}
-    for r in reverse_mode:
-        visited[r] = False
-
+    
     reachable = set()
 
     for start in accepting_states:
+        for r in reverse_mode:
+            visited[r] = False
+
         reachable.add(start)
-        q = list(reverse_mode[start])
+        q = [start]
+
         while(q):
             s = q.pop()
-
             for i in reverse_mode[s]:
                 if visited[i] == False:
                     q.append(i)
                     visited[i] = True
                     reachable.add(i)
+
             
     optimized_transition_table = set()
 
+    valid_nodes = []
+
     for t in transition_table:
         if t[1] in reachable: 
+            valid_nodes.append(t[1])
             optimized_transition_table.add(t)
 
-    return optimized_transition_table
+    actual_optimized_table = set()
+
+    for o in optimized_transition_table:
+        fixed_tuples = []
+        for trans in o:
+            if trans == '+' or trans == '-':
+                fixed_tuples.append(trans)
+            elif trans not in valid_nodes: 
+                trans = 'E'
+                fixed_tuples.append(trans)
+            else:
+                fixed_tuples.append(trans)
+        actual_optimized_table.add(tuple(fixed_tuples))
+
+    return actual_optimized_table
 
 #########################################################################################
 # TOKEN MATCHING
@@ -443,7 +462,6 @@ def main(argv):
         inpoot_file = argv[1]
         output_file = argv[2]
         t = False
-
     else:
         inpoot_file = argv[1]
         output_file = argv[2]
