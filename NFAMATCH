@@ -452,10 +452,11 @@ def create_nfa_table(filename):
                     
                     if starting_state == -1 and int(line[1]) == 0:
                         starting_state = int(line[1])
-            except:
-                sys.exit(1)
-
+            
             file_input.close()
+    except:
+        sys.exit(1)
+ 
 
     return table, starting_state, accept, lambduh, alphabet
 
