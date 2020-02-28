@@ -63,12 +63,13 @@ def nfa_to_dfa(table,accept,lambduh,alphabet,start):
     #   L = empty stack
     #   A = set of accepting states for N
     #   i = starting state of N
-
     L = []
     A = accept
     i = [start]
     
-    B = tuple(follow_lambda(i,table,lambduh))
+    B = follow_lambda(i,table,lambduh)
+    B.sort()
+    B = tuple(B)
 
     start = B
 
@@ -132,6 +133,9 @@ def nfa_to_dfa(table,accept,lambduh,alphabet,start):
 #   My implementatiion of the DFA is a dictionary with states represented as tuples
 #   This function is used to simplify the tuples into readable ints
 def simplify_states(dfa_table, dfa_accept, start):
+
+    print(dfa_accept)
+    print(start)
 
     simple_table = {}
     simple_accept = []
@@ -198,7 +202,6 @@ def dfa_opt(dfa_table, dfa_accept, alphabet, start):
 
     # Step 0:
     #   Simplify dfa_table and dfa_accept
-
     dfa_table, dfa_accept = simplify_states(dfa_table, dfa_accept, start)
 
     # Step 1: 
@@ -469,9 +472,6 @@ def main(argv):
         tokens = argv[3:]
 
     table,start,accept,lambduh,alphabet = create_nfa_table(inpoot_file)
-
-    for duh in table:
-        print(duh,table[duh])
 
     dfa_table, dfa_accept, start = nfa_to_dfa(table,accept,lambduh,alphabet,start)
 
