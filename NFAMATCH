@@ -347,6 +347,7 @@ def dead_state_remover(transition_table):
 #########################################################################################
 
 def token_match(tokens,table, alphabet):
+    print(tokens)
     accept = []
     dict_table = {}
 
@@ -365,7 +366,10 @@ def token_match(tokens,table, alphabet):
         count = 1
         match = True
         if token == '':
-            print("OUTPUT 0")
+            if current_state in accept:
+                print("OUTPUT :M:")
+            else:
+                print("OUTPUT 0")
         else:
             for t in token:
                 if transitions[alphabet[t]] != 'E':
